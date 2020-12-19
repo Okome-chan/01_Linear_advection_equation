@@ -1,9 +1,9 @@
 
 /*****************************************************************************/
 //
-//  finite_difference.cc
+//  lux_wendroff.cc
 //  
-//  ver 0.0.1   2020/12/14
+//  ver 0.0.1   2020/12/20
 //  developed by Yoneda
 //
 /*****************************************************************************/
@@ -24,7 +24,6 @@ using namespace std;
 
 int main(){
 
-  int typ;          //simulation type (1: Backward, 2: Forward, 3: Center)
   int t;
   int tmax;         //time step
   int collumn;      //number of collumn
@@ -56,9 +55,7 @@ int main(){
   //Define subroutine
   /**********************************/
   void initial_array(double *u,int collumn);
-  void Backward(double *u_new, double *u, double r, int imax);
-  void Forward(double *u_new, double *u, double r, int imax);
-  void Center(double *u_new, double *u, double r, int imax);
+  void Lux_wendroff(double *u_new, double *u, double r, int imax);
   void update_value(double *u_new, double *u, int imax);
   void make_graph(double *u,double collumn,double dx,int t,FILE *fp);
 
@@ -68,22 +65,13 @@ int main(){
   initial_array(u,collumn);
 
   /**********************************/
-  //select simulation type
-  /**********************************/
-  cout<<"1: Backward, 2: Forward, 3: Center"<<endl;
-  cout<<"Please enter simulation type"<<endl;
-  cin>>typ;
-
-  /**********************************/
   // calculate Courant number
   /**********************************/
   r=c*dt/dx;
   t=0;
   make_graph(u,collumn,dx,t,fp);
   for(t=1; t<=tmax; t++){
-    if(typ==1) Backward(u_new,u,r,collumn);
-    if(typ==2) Forward(u_new,u,r,collumn);
-    if(typ==3) Center(u_new,u,r,collumn);
+    Lux_wendroff(u_new,u,r,collumn);
     update_value(u_new,u,collumn);
     if(t%5==0) make_graph(u,collumn,dx,t,fp);
   }
@@ -104,8 +92,8 @@ void initial_array(double *u,int collumn){
   return;
 }
 
-//Backward difference scheme
-void Backward(double *u_new, double *u, double r, int imax){
+//Lux Wendroff scheme
+void Lux_wendroff(double *u_new, double *u, double r, int imax){
   int i;
   for(i=1; i<=imax; i++){
     //boundary condition
@@ -114,44 +102,11 @@ void Backward(double *u_new, double *u, double r, int imax){
     }else if(i==imax){
       u_new[i]=0.;
     }else{
-      u_new[i]=u[i]-r*(u[i]-u[i-1]);
+      u_new[i]=u[i]-r/2.*(u[i+1]-u[i-1])+r*r/2.*(u[i+1]-2.*u[i]+u[i-1]);
     }
   }
   return;
 }
-
-//Forward difference scheme
-void Forward(double *u_new, double *u, double r, int imax){
-  int i;
-  for(i=1; i<imax; i++){
-    //boundary condition
-    if(i==1){
-      u_new[i]=0.;
-    }else if(i==imax){
-      u_new[i]=0.;
-    }else{
-      u_new[i]=u[i]-r*(u[i+1]-u[i]);
-    }
-  }
-  return;
-}
-
-//Center difference scheme
-void Center(double *u_new, double *u, double r, int imax){
-  int i;
-  for(i=1; i<imax; i++){
-    //boundary condition
-    if(i==1){
-      u_new[i]=0.;
-    }else if(i==imax){
-      u_new[i]=0.;
-    }else{
-      u_new[i]=u[i]-r/2.*(u[i+1]-u[i-1]);
-    }
-  }
-  return;
-}
-
 
 
 //Update simulated values
@@ -174,7 +129,7 @@ void make_graph(double *u,double collumn,double dx,int t,FILE *fp)
   fprintf(fp,"set terminal png size 400,400\n");
   fprintf(fp,"set output './output/%04d.jpg'\n",t);
   fprintf(fp,"set xrange [0.0:50.0]\n");
-  fprintf(fp,"set yrange [0.0:1.2]\n");
+  fprintf(fp,"set yrange [-0.4:1.4]\n");
   //sleep(1);
   sprintf(data_file,"out.dat");
   data=fopen(data_file,"w");
